@@ -1,0 +1,1177 @@
+/**
+ * 全局样式
+ * 说明：本文件由原项目 html/style.css 原样迁移（SCSS 为 CSS 超集，无需改写），
+ * 以保证重构后页面视觉与原生项目 100% 一致。
+ *
+ * 主题机制：通过 body 上的 .theme-dark 类切换深色主题（CSS 变量覆盖）。
+ * TODO: 媒体查询中定义了 .sidebar.open（移动端左滑抽屉）但原生 JS 未提供
+ *       切换按钮，如需支持移动端，可补充一个侧边栏开关。
+ */
+
+/* ==================== 基础重置和变量 ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ==================== 国风限定·书法字体（本地自托管，无需外网） ==================== */
+/* 马善政楷书：用于国风主题标题与过场大字，加载失败自动回落系统楷体 */
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  src: url('/materials/fonts/MaShanZheng-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --primary-color: #ff6b9d;
+  --primary-hover: #ff527d;
+  --secondary-color: #4a5568;
+  --bg-color: #f7fafc;
+  --sidebar-bg: #ffffff;
+  --chat-bg: #eef1f6;
+  --user-msg-bg: #dcf8c6;
+  --ai-msg-bg: #ffffff;
+  --border-color: #dde3ee;
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.12);
+  /* 页面背景：顶部淡粉 → 底部淡蓝灰，营造柔和色彩对比 */
+  --page-bg: linear-gradient(160deg, #fef6f8 0%, #f6f8fc 55%, #f1f5fb 100%);
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background: var(--page-bg);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  /* 主题切换时的全局颜色过渡 */
+  transition:
+    background-color 0.45s ease,
+    color 0.45s ease;
+}
+
+/* ==================== 双飞翼布局容器 ==================== */
+/* 三栏（左翼会话栏 / 中间主区 / 右翼项目介绍）卡片化分离，突出双飞翼结构 */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  gap: 14px;
+  padding: 14px;
+  position: relative;
+}
+
+/* ==================== 氛围光斑（缓慢漂移，随主题换色） ==================== */
+/* 两团柔焦光晕在页面底层缓慢游走，透过半透明玻璃面板形成流动的光影 */
+.app-container::before,
+.app-container::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(60px);
+  will-change: transform;
+}
+.app-container::before {
+  width: 560px;
+  height: 560px;
+  top: -180px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(255, 107, 157, 0.26), transparent 70%);
+  animation: ambientDrift1 26s ease-in-out infinite alternate;
+}
+.app-container::after {
+  width: 640px;
+  height: 640px;
+  bottom: -220px;
+  right: -140px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.2), transparent 70%);
+  animation: ambientDrift2 32s ease-in-out infinite alternate;
+}
+@keyframes ambientDrift1 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(120px, 80px) scale(1.15);
+  }
+}
+@keyframes ambientDrift2 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-140px, -90px) scale(1.2);
+  }
+}
+
+/* ==================== 侧边栏（左翼） ==================== */
+.sidebar {
+  width: 260px;
+  /* 玻璃拟态：磨砂半透明，透出底层氛围光斑（高模糊 + 提饱和 + 顶部内发光高光） */
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 8px 32px rgba(31, 23, 42, 0.08);
+  overflow-y: auto;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  /* 页面入场 + 主题切换过渡 */
+  animation: panelIn 0.5s ease both;
+  transition:
+    background 0.45s ease,
+    border-color 0.45s ease,
+    box-shadow 0.45s ease;
+}
+
+.sidebar:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebar-header {
+  margin-bottom: 15px;
+}
+
+.sidebar-header h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  display: flex;
+  padding-top: 10px;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 三栏依次入场动画（左翼 → 中间 → 右翼） */
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== 按钮样式 ==================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-color);
+}
+
+.btn-active {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+}
+
+.btn-full {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.btn-send {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+  font-size: 16px;
+}
+
+.btn-send:hover {
+  transform: scale(1.05);
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.btn-icon:hover {
+  background-color: #fed7d7;
+  color: #e53e3e;
+}
+
+/* ==================== 会话列表 ==================== */
+.session-section {
+  margin-bottom: 20px;
+}
+
+.session-section h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* hover：轻微右移，制造推入感 */
+.session-btn:hover {
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(255, 107, 157, 0.15);
+}
+
+/* ==================== 分割线 ==================== */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 20px 0;
+}
+
+/* ==================== 伴侣信息表单 ==================== */
+.companion-section h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+}
+
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  background-color: white;
+  cursor: pointer;
+}
+
+.form-group select:hover {
+  border-color: var(--primary-color);
+}
+
+.form-group select option {
+  padding: 8px;
+}
+
+/* ==================== 主聊天区域（中间主区） ==================== */
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* 玻璃拟态：比侧栏更通透，突出中间聊天区（模糊加强 + 顶部内发光高光） */
+  /* 透明度由 --chat-glass-alpha 控制（useChatGlass 滑块，默认 0.38），调低即可透出 MP4 背景 */
+  background: rgba(255, 255, 255, var(--chat-glass-alpha, 0.38));
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    var(--shadow);
+  position: relative;
+  z-index: 1;
+  /* 页面入场 + 主题切换过渡 */
+  animation: panelIn 0.5s ease 0.08s both;
+  transition:
+    background 0.45s ease,
+    border-color 0.45s ease,
+    box-shadow 0.45s ease;
+}
+
+.chat-container:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    var(--shadow-lg);
+}
+
+.chat-header {
+  background: rgba(255, 255, 255, var(--chat-glass-alpha, 0.42));
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  transition:
+    background 0.45s ease,
+    border-color 0.45s ease;
+}
+
+.chat-header h1 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.session-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ==================== 聊天消息区域 ==================== */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 自定义滚动条 */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+/* ==================== 消息气泡 ==================== */
+.message {
+  display: flex;
+  gap: 12px;
+  max-width: 80%;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  /* 线性 SVG 图标在渐变底上用白色描边更清晰 */
+  color: #fff;
+}
+
+.message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message.user .message-avatar {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.message.assistant {
+  align-self: flex-start;
+}
+
+.message.assistant .message-avatar {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+}
+
+.message-content {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: var(--shadow);
+  word-wrap: break-word;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* 气泡 hover：轻微上浮，增加交互感 */
+.message-content:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.message.user .message-content {
+  /* 用户气泡：紫罗兰渐变缓慢流动 + 同色系光晕 */
+  background: linear-gradient(120deg, #667eea, #764ba2, #667eea);
+  background-size: 200% 100%;
+  color: white;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 16px rgba(118, 75, 162, 0.32);
+  animation: bubbleGlowUser 5s linear infinite;
+}
+@keyframes bubbleGlowUser {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+.message.assistant .message-content {
+  /* AI 气泡：粉彩柔光描边 + 淡粉光晕 */
+  background-color: var(--ai-msg-bg);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 107, 157, 0.3);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 4px 16px rgba(255, 107, 157, 0.12);
+  transition:
+    background-color 0.45s ease,
+    color 0.45s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* ==================== 输入区域 ==================== */
+.chat-input-container {
+  background: rgba(255, 255, 255, var(--chat-glass-alpha, 0.5));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  transition:
+    background 0.45s ease,
+    border-color 0.45s ease;
+}
+
+.chat-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--chat-bg);
+  border-radius: 24px;
+  padding: 8px 8px 8px 20px;
+  border: 1px solid var(--border-color);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.chat-input-wrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+}
+
+.chat-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  color: var(--text-primary);
+}
+
+.chat-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ==================== 加载动画 ==================== */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* ==================== 空状态 ==================== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  /* 空状态图标轻轻漂浮，页面不显死板 */
+  animation: emptyFloat 4s ease-in-out infinite;
+}
+@keyframes emptyFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.empty-state-text {
+  font-size: 14px;
+}
+
+/* ==================== 聊天头部布局 ==================== */
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  flex: 1;
+}
+
+/* ==================== 右侧项目介绍栏（右翼） ==================== */
+.info-sidebar {
+  width: 320px;
+  /* 玻璃拟态：与左栏一致的磨砂质感（模糊加强 + 顶部内发光高光） */
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 8px 32px rgba(31, 23, 42, 0.08);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  /* 页面入场 + 主题切换过渡 */
+  animation: panelIn 0.5s ease 0.16s both;
+  transition:
+    background 0.45s ease,
+    border-color 0.45s ease,
+    box-shadow 0.45s ease;
+}
+
+.info-sidebar:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    var(--shadow-lg);
+}
+
+.info-header {
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border-color);
+  margin: 0 18px;
+  background: rgba(255, 255, 255, 0.35);
+  transition:
+    background 0.45s ease,
+    border-color 0.45s ease;
+}
+
+.info-header h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.info-content {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.info-section {
+  margin-bottom: 24px;
+}
+
+.info-section:last-child {
+  margin-bottom: 0;
+}
+
+.info-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-section p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.feature-list,
+.audience-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feature-list li,
+.audience-list li {
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.feature-list li::before,
+.audience-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.feature-list li strong {
+  color: var(--text-primary);
+}
+
+.footer-text {
+  margin-top: 38px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-text p {
+  color: var(--primary-color) !important;
+  text-align: center;
+  font-size: 13px !important;
+}
+
+#newSessionBtn {
+  margin-bottom: 20px;
+  padding: 10px 12px;
+  width: calc(100% - 40px);
+}
+
+.theme-option.active {
+  background-color: rgba(255, 107, 157, 0.15);
+  position: relative;
+}
+
+.theme-option.active::after {
+  content: '✓';
+  position: absolute;
+  right: 12px;
+  color: var(--primary-color);
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* ==================== 深色主题（分层对比，避免一片黑） ==================== */
+/* 层次设计：
+ *   页面背景（最深）→ 左右翼卡片 → 中间聊天区 → 气泡/输入框（最浅浮起）
+ */
+body.theme-dark {
+  --bg-color: #10141c;
+  --sidebar-bg: #1a2130;
+  --chat-bg: #151a24;
+  --ai-msg-bg: #242e40;
+  --border-color: #2e3949;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 20px -4px rgba(0, 0, 0, 0.5);
+  --page-bg: linear-gradient(160deg, #0e1220 0%, #10141c 55%, #0c1018 100%);
+}
+
+/* ==================== 黎明主题（暖霞金橙，与黎明视频色调一致） ==================== */
+body.theme-dawn {
+  --primary-color: #ff8a5c;
+  --primary-hover: #ff7043;
+  --bg-color: #fff8f0;
+  --sidebar-bg: #fffdf8;
+  --chat-bg: #fff3e6;
+  --ai-msg-bg: #fffdf8;
+  --border-color: #f2ddc8;
+  --text-primary: #4a3226;
+  --text-secondary: #a08069;
+  --shadow: 0 4px 6px -1px rgba(180, 100, 60, 0.12);
+  --shadow-lg: 0 10px 15px -3px rgba(180, 100, 60, 0.16);
+  --page-bg: linear-gradient(160deg, #fff6ea 0%, #fff0e2 55%, #ffe8da 100%);
+}
+
+/* 黎明主题：氛围光斑换暖橙+粉金 */
+body.theme-dawn .app-container::before {
+  background: radial-gradient(circle, rgba(255, 159, 127, 0.26), transparent 70%);
+}
+body.theme-dawn .app-container::after {
+  background: radial-gradient(circle, rgba(255, 107, 157, 0.2), transparent 70%);
+}
+
+/* 黎明主题：三栏换暖色玻璃 */
+body.theme-dawn .sidebar,
+body.theme-dawn .info-sidebar {
+  background: rgba(255, 250, 242, 0.62);
+  border-color: rgba(255, 209, 163, 0.75);
+}
+body.theme-dawn .chat-container {
+  background: rgba(255, 250, 242, var(--chat-glass-alpha, 0.45));
+  border-color: rgba(255, 209, 163, 0.6);
+}
+body.theme-dawn .chat-header,
+body.theme-dawn .chat-input-container,
+body.theme-dawn .info-header {
+  background: rgba(255, 250, 242, var(--chat-glass-alpha, 0.5));
+}
+
+/* 黎明主题：AI 气泡暖橙描边光晕，用户气泡换暖橙渐变流光 */
+body.theme-dawn .message.assistant .message-content {
+  border-color: rgba(255, 138, 92, 0.32);
+  box-shadow: 0 4px 16px rgba(255, 138, 92, 0.14);
+}
+body.theme-dawn .message.user .message-content {
+  background: linear-gradient(120deg, #ff8a5c, #ff6b9d, #ff8a5c);
+  background-size: 200% 100%;
+  box-shadow: 0 4px 16px rgba(255, 138, 92, 0.35);
+}
+
+/* 三栏卡片在暗色下的边框 */
+body.theme-dark .sidebar,
+body.theme-dark .chat-container,
+body.theme-dark .info-sidebar {
+  border-color: rgba(124, 58, 237, 0.28);
+}
+
+/* 暗夜主题：氛围光斑换紫粉冷光，幽暗中流动 */
+body.theme-dark .app-container::before {
+  background: radial-gradient(circle, rgba(255, 107, 157, 0.16), transparent 70%);
+}
+body.theme-dark .app-container::after {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.26), transparent 70%);
+}
+
+/* 暗夜主题：三栏换成暗色玻璃，透出底层幽光 */
+body.theme-dark .sidebar {
+  background: rgba(20, 26, 38, 0.55);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+body.theme-dark .chat-container {
+  background: rgba(16, 20, 30, var(--chat-glass-alpha, 0.45));
+}
+
+body.theme-dark .info-sidebar {
+  background: rgba(20, 26, 38, 0.55);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+body.theme-dark .chat-header {
+  background: rgba(20, 26, 38, var(--chat-glass-alpha, 0.45));
+  border-bottom-color: #2e3949;
+}
+
+body.theme-dark .chat-input-container {
+  background: rgba(20, 26, 38, var(--chat-glass-alpha, 0.45));
+  border-top-color: #2e3949;
+}
+
+body.theme-dark .message.assistant .message-content {
+  background-color: #242e40;
+  color: #f1f5f9;
+  /* 暗色下 AI 气泡：紫粉描边 + 柔和光晕，浮起感 */
+  border-color: rgba(192, 132, 252, 0.28);
+  box-shadow: 0 4px 20px rgba(255, 107, 157, 0.18);
+}
+
+body.theme-dark .message.user .message-content {
+  /* 暗色下用户气泡：光晕更亮，像夜色里的霓虹 */
+  box-shadow: 0 4px 22px rgba(118, 75, 162, 0.55);
+}
+
+body.theme-dark .chat-input-wrapper {
+  background-color: #242e40;
+  border-color: #3a4659;
+}
+
+body.theme-dark .chat-input-wrapper:focus-within {
+  border-color: #fbcfe8;
+  box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.22);
+}
+
+body.theme-dark .form-group input,
+body.theme-dark .form-group textarea,
+body.theme-dark .form-group select {
+  background-color: #242e40;
+  color: #f1f5f9;
+  border-color: #3a4659;
+}
+
+body.theme-dark .form-group select {
+  background-color: #242e40;
+}
+
+body.theme-dark .form-group select option {
+  background-color: #242e40;
+  color: #f1f5f9;
+}
+
+body.theme-dark .session-btn.btn-secondary {
+  background-color: #242e40;
+  color: #f1f5f9;
+  border-color: #3a4659;
+}
+
+body.theme-dark .session-btn:hover {
+  box-shadow: 0 2px 10px rgba(255, 107, 157, 0.25);
+}
+
+body.theme-dark .divider {
+  border-top-color: #242e40;
+}
+
+/* 右侧项目介绍栏暗黑模式 */
+body.theme-dark .info-header {
+  background: rgba(20, 26, 38, 0.4);
+  border-bottom-color: #2e3949;
+}
+
+body.theme-dark .footer-text {
+  border-top-color: #2e3949;
+}
+
+/* ==================== 国风限定·武侠主题（仙侠红：暗夜红 + 朱砂 + 鎏金） ==================== */
+/* 意境：暗夜朱红为底，血色江湖，鎏金剑光，如不良人中的仙侠世界 */
+body.theme-wuxia {
+  --primary-color: #c0392b;
+  --primary-hover: #a93226;
+  --bg-color: #1e0f0c;
+  --sidebar-bg: #28120d;
+  --chat-bg: #230f0b;
+  --ai-msg-bg: #301410;
+  --border-color: #47231a;
+  --text-primary: #f6e8d3;
+  --text-secondary: #bd8f6f;
+  --shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 20px -4px rgba(0, 0, 0, 0.65);
+  --page-bg: linear-gradient(160deg, #150d0c 0%, #1f1010 55%, #2a100c 100%);
+}
+
+/* 国风主题：氛围光斑换血色红 + 鎏金，如烛火在夜色中晕染 */
+body.theme-wuxia .app-container::before {
+  background: radial-gradient(circle, rgba(217, 50, 39, 0.26), transparent 70%);
+}
+body.theme-wuxia .app-container::after {
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.2), transparent 70%);
+}
+
+/* 国风主题：三栏换暗红玻璃 + 鎏金细描边 */
+body.theme-wuxia .sidebar,
+body.theme-wuxia .info-sidebar {
+  background: rgba(30, 14, 11, 0.58);
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(212, 175, 55, 0.16),
+    0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+body.theme-wuxia .chat-container {
+  background: rgba(26, 12, 9, var(--chat-glass-alpha, 0.48));
+  border-color: rgba(212, 175, 55, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(212, 175, 55, 0.14),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-wuxia .chat-header,
+body.theme-wuxia .chat-input-container,
+body.theme-wuxia .info-header {
+  background: rgba(30, 14, 11, var(--chat-glass-alpha, 0.5));
+  border-color: rgba(212, 175, 55, 0.22);
+}
+
+/* 国风主题：标题楷体 + 鎏金字，侠气扑面 */
+body.theme-wuxia .chat-header h1,
+body.theme-wuxia .sidebar-header h2,
+body.theme-wuxia .info-header h2,
+body.theme-wuxia .session-section h3,
+body.theme-wuxia .companion-section h3,
+body.theme-wuxia .info-section h3 {
+  font-family: 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'SimSun', serif;
+  color: #e8c06a;
+}
+
+/* 国风主题：AI 气泡暗红玉底 + 鎏金描边，用户气泡朱砂流光 */
+body.theme-wuxia .message.assistant .message-content {
+  background-color: #301410;
+  color: #f6e8d3;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.14);
+}
+
+body.theme-wuxia .message.user .message-content {
+  background: linear-gradient(120deg, #a93226, #c0392b, #d4af37, #c0392b);
+  background-size: 250% 100%;
+  animation: bubbleGlowUser 6s ease infinite;
+  box-shadow: 0 4px 20px rgba(192, 57, 43, 0.42);
+}
+
+/* 国风主题：头像换朱砂 / 墨金渐变 */
+body.theme-wuxia .message.user .message-avatar {
+  background: linear-gradient(135deg, #a93226, #7b241c);
+}
+body.theme-wuxia .message.assistant .message-avatar {
+  background: linear-gradient(135deg, #8a6d2f, #4a3a16);
+}
+
+/* 国风主题：输入区墨色砚台质感，聚焦时鎏金光环 */
+body.theme-wuxia .chat-input-wrapper {
+  background-color: #301410;
+  border-color: rgba(212, 175, 55, 0.3);
+}
+body.theme-wuxia .chat-input-wrapper:focus-within {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+body.theme-wuxia .form-group input,
+body.theme-wuxia .form-group textarea,
+body.theme-wuxia .form-group select {
+  background-color: #301410;
+  color: #f3e9d2;
+  border-color: rgba(212, 175, 55, 0.28);
+}
+
+body.theme-wuxia .form-group input:focus,
+body.theme-wuxia .form-group textarea:focus,
+body.theme-wuxia .form-group select:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.18);
+}
+
+body.theme-wuxia .form-group select option {
+  background-color: #301410;
+  color: #f3e9d2;
+}
+
+/* 国风主题：会话按钮墨底金描，激活朱砂 */
+body.theme-wuxia .session-btn.btn-secondary {
+  background-color: #301410;
+  color: #f3e9d2;
+  border-color: rgba(212, 175, 55, 0.26);
+}
+body.theme-wuxia .session-btn.btn-active {
+  background: linear-gradient(135deg, #a93226, #7b241c);
+  color: #f8e8c8;
+}
+body.theme-wuxia .session-btn:hover {
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.22);
+}
+
+body.theme-wuxia .divider {
+  border-top-color: rgba(212, 175, 55, 0.2);
+}
+
+body.theme-wuxia .companion-value {
+  background-color: #28120d;
+  color: #f3e9d2;
+  border-color: rgba(212, 175, 55, 0.22);
+}
+
+/* 国风主题：发送按钮朱砂底 + 鎏金光晕 */
+body.theme-wuxia .btn-send {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  box-shadow: 0 4px 14px rgba(192, 57, 43, 0.4);
+}
+body.theme-wuxia .btn-send:hover {
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45);
+}
+
+/* 国风主题：空状态图标鎏金 */
+body.theme-wuxia .empty-state-icon {
+  color: rgba(212, 175, 55, 0.75);
+}
+
+/* ==================== 响应式设计 ==================== */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    height: 100vh;
+    z-index: 100;
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .chat-container {
+    width: 100%;
+  }
+
+  .info-sidebar {
+    display: none;
+  }
+}
+
+/* ==================== 背景完全透明（透明度滑块拉到 0%） ====================
+ * 生效时由 useChatGlass 给 body 加 .chat-glass-clear 类。
+ * 彻底关闭聊天三栏的毛玻璃模糊与半透明底色，让 MP4 背景 100% 透出。 */
+body.chat-glass-clear .chat-container,
+body.chat-glass-clear .chat-header,
+body.chat-glass-clear .chat-input-container {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* 输入框本身也去掉固有色，仅保留边框，避免整体透明时留下一块底 */
+body.chat-glass-clear .chat-input-wrapper {
+  background-color: transparent;
+}
+body.chat-glass-clear .chat-input-wrapper:focus-within {
+  background-color: transparent;
+}

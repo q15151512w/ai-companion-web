@@ -1,0 +1,4 @@
+# 构建产物与依赖不参与代码检查
+dist/
+node_modules/
+public/
